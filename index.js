@@ -30,6 +30,9 @@ async function run() {
     // await client.connect();
 
     const serviceCollection = client.db("fixFastDB").collection("services");
+    const bookedServiceCollection = client
+      .db("fixFastDB")
+      .collection("booked_services");
 
     // get all services from db
     app.get("/services", async (req, res) => {
@@ -45,10 +48,17 @@ async function run() {
       res.send(result);
     });
 
-    // add service info to db
+    // save service info to db
     app.post("/add-service", async (req, res) => {
       const serviceInfo = req.body;
       const result = await serviceCollection.insertOne(serviceInfo);
+      res.send(result);
+    });
+
+    // save booked service info:
+    app.post("/booked-service", async (req, res) => {
+      const bookedService = req.body;
+      const result = await bookedServiceCollection.insertOne(bookedService);
       res.send(result);
     });
 
