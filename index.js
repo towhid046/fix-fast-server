@@ -49,12 +49,12 @@ async function run() {
     });
 
     // get all services by a specific user:
-    app.get('/user-services', async(req, res)=>{
-      const email = req.query?.email
-      const query = {'provider_info.email': email}
-      const result = await serviceCollection.find(query).toArray()    
-      res.send(result)
-    })
+    app.get("/user-services", async (req, res) => {
+      const email = req.query?.email;
+      const query = { "provider_info.email": email };
+      const result = await serviceCollection.find(query).toArray();
+      res.send(result);
+    });
 
     // save service info to db
     app.post("/add-service", async (req, res) => {
@@ -67,6 +67,26 @@ async function run() {
     app.post("/booked-service", async (req, res) => {
       const bookedService = req.body;
       const result = await bookedServiceCollection.insertOne(bookedService);
+      res.send(result);
+    });
+
+    // delete a service by id:
+    app.delete("/delete-service/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await serviceCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // update a service using PATCH method:
+    app.patch("/update-service", async (req, res) => {
+      const id = req.query?.id;
+      const service = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const updatedService = {
+        $set: { ...service },
+      };
+      const result = await serviceCollection.updateOne(filter, updatedService);
       res.send(result);
     });
 
