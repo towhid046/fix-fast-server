@@ -1,5 +1,5 @@
 const express = require("express");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const cors = require("cors");
 const app = express();
@@ -31,6 +31,21 @@ async function run() {
 
     const serviceCollection = client.db("fixFastDB").collection("services");
 
+    // get all services from db
+    app.get("/services", async (req, res) => {
+      const result = await serviceCollection.find().toArray();
+      res.send(result);
+    });
+
+    // get a single service by _id:
+    app.get("/services/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await serviceCollection.findOne(query);
+      res.send(result);
+    });
+
+    // add service info to db
     app.post("/add-service", async (req, res) => {
       const serviceInfo = req.body;
       const result = await serviceCollection.insertOne(serviceInfo);
