@@ -56,6 +56,14 @@ async function run() {
       res.send(result);
     });
 
+    // get all booked services by a specific user:
+    app.get('/booked-services', async(req, res)=>{
+      const email = req.query?.email;
+      const query = { current_user_email: email };
+      const result = await bookedServiceCollection.find(query).toArray();
+      res.send(result);
+    })
+
     // save service info to db
     app.post("/add-service", async (req, res) => {
       const serviceInfo = req.body;
