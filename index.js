@@ -48,6 +48,14 @@ async function run() {
       res.send(result);
     });
 
+    // get all services by a specific user:
+    app.get('/user-services', async(req, res)=>{
+      const email = req.query?.email
+      const query = {'provider_info.email': email}
+      const result = await serviceCollection.find(query).toArray()    
+      res.send(result)
+    })
+
     // save service info to db
     app.post("/add-service", async (req, res) => {
       const serviceInfo = req.body;
