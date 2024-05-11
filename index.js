@@ -36,7 +36,11 @@ async function run() {
 
     // get all services from db
     app.get("/services", async (req, res) => {
-      const result = await serviceCollection.find().toArray();
+      const search = req.query.search;
+        const query = search ? {
+          service_name: { $regex: search, $options: "i" },
+        } : {}
+      const result = await serviceCollection.find(query).toArray();
       res.send(result);
     });
 
@@ -106,19 +110,19 @@ async function run() {
       res.send(result);
     });
 
-    // update only service status by using PATCH method:
+    // update only serviceStatus by using PATCH method:
     app.patch("/update-service-status/:id", async (req, res) => {
       const id = req.params.id;
-      const status = req.body.currentStatus
+      const status = req.body.currentStatus;
       const filter = { _id: new ObjectId(id) };
       const updatedStatus = {
-        $set: { serviceStatus: status},
+        $set: { serviceStatus: status },
       };
       const result = await bookedServiceCollection.updateOne(
         filter,
         updatedStatus
       );
-      res.send(result)
+      res.send(result);
     });
 
     // Send a ping to confirm a successful connection
