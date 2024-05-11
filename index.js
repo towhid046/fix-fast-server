@@ -57,12 +57,20 @@ async function run() {
     });
 
     // get all booked services by a specific user:
-    app.get('/booked-services', async(req, res)=>{
+    app.get("/booked-services", async (req, res) => {
       const email = req.query?.email;
       const query = { current_user_email: email };
       const result = await bookedServiceCollection.find(query).toArray();
       res.send(result);
-    })
+    });
+
+    // get all services to do by a specific service provider
+    app.get("/todo-services", async (req, res) => {
+      const email = req.query?.email;
+      const query = { provider_email: email };
+      const result = await bookedServiceCollection.find(query).toArray();
+      res.send(result);
+    });
 
     // save service info to db
     app.post("/add-service", async (req, res) => {
@@ -86,7 +94,7 @@ async function run() {
       res.send(result);
     });
 
-    // update a service using PATCH method:
+    // partially update a service using PATCH method:
     app.patch("/update-service", async (req, res) => {
       const id = req.query?.id;
       const service = req.body;
@@ -96,6 +104,21 @@ async function run() {
       };
       const result = await serviceCollection.updateOne(filter, updatedService);
       res.send(result);
+    });
+
+    // update only service status by using PATCH method:
+    app.patch("/update-service-status/:id", async (req, res) => {
+      const id = req.params.id;
+      const status = req.body.currentStatus
+      const filter = { _id: new ObjectId(id) };
+      const updatedStatus = {
+        $set: { serviceStatus: status},
+      };
+      const result = await bookedServiceCollection.updateOne(
+        filter,
+        updatedStatus
+      );
+      res.send(result)
     });
 
     // Send a ping to confirm a successful connection
