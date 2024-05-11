@@ -36,12 +36,18 @@ async function run() {
 
     // get all services from db
     app.get("/services", async (req, res) => {
-      const search = req.query.search;
-        const query = search ? {
-          service_name: { $regex: search, $options: "i" },
-        } : {}
-      const result = await serviceCollection.find(query).toArray();
-      res.send(result);
+      const search = req.query?.search;
+      const query = {
+        service_name: { $regex: search, $options: "i" },
+      };
+      if (search) {
+        const result = await serviceCollection.find(query).toArray();
+        res.send(result);
+        return;
+      } else if (!search) {
+        const result = await serviceCollection.find().toArray();
+        res.send(result);
+      }
     });
 
     // get a single service by _id:
