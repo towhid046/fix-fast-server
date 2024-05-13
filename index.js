@@ -67,18 +67,29 @@ async function run() {
 
     // get all services from db
     app.get("/services", async (req, res) => {
+      const servicePerPage = Number(req.query?.totalPerPage);
+      const currentPage = Number(req.query?.currentPage);
       const search = req.query?.search;
-      const query = {
-        service_name: { $regex: search, $options: "i" },
-      };
+      const query = search
+        ? { service_name: { $regex: search, $options: "i" } }
+        : {};
+
+      let result;
       if (search) {
-        const result = await serviceCollection.find(query).toArray();
-        res.send(result);
-        return;
-      } else if (!search) {
-        const result = await serviceCollection.find().toArray();
-        res.send(result);
+        result = await serviceCollection.find(query).toArray();
+      } else {
+        result = await serviceCollection
+          .find(query)
+          .skip((currentPage - 1) * servicePerPage)
+          .limit(servicePerPage)
+          .toArray();
       }
+      res.send(result);
+    });
+
+    app.get("/services-count", async (req, res) => {
+      const count = await serviceCollection.countDocuments();
+      res.send({ count });
     });
 
     // get a single service by _id:
@@ -142,6 +153,7 @@ async function run() {
       const result = await newsCollection.find().toArray();
       res.send(result);
     });
+
     // get a single news by id
     app.get("/news/:id", async (req, res) => {
       const id = req.params.id;
@@ -157,11 +169,12 @@ async function run() {
         expiresIn: "7hr",
       });
 
-      res.cookie("token", token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none'
-      })
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: "none",
+        })
         .send({ success: true });
     });
 
