@@ -1,5 +1,7 @@
 const express = require("express");
+const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const cookieParser = require("cookie-parser");
 require("dotenv").config();
 const cors = require("cors");
 const app = express();
@@ -7,8 +9,14 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 // middleware:
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "https://fix-fast-63d93.web.app/"],
+    credentials: true,
+  })
+);
 app.use(express.json());
+app.use(cookieParser());
 
 app.get("/", (req, res) => {
   res.send("FixFast is running...");
@@ -24,6 +32,24 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+
+// custom middleware:
+
+const verifyToken = async (req, res, next) => {
+  const token = req.cookies?.token;
+  if (!token) {
+    return res.status(401).send("not authorization");
+  }
+  jwt.verify(token, process.env.USER_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send("not authorize");
+    }
+
+    // if token is valid it will be in the decoded
+    req.user = decoded;
+    next();
+  });
+};
 
 async function run() {
   try {
@@ -59,27 +85,78 @@ async function run() {
     });
 
     // get all services by a specific user:
-    app.get("/user-services", async (req, res) => {
+    app.get("/user-services", verifyToken, async (req, res) => {
       const email = req.query?.email;
-      const query = { "provider_info.email": email };
+      const loggedUserEmail = req.user?.loggedUser;
+
+      if (email !== loggedUserEmail) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      let query = {};
+      if (email) {
+        query = { "provider_info.email": email };
+      }
       const result = await serviceCollection.find(query).toArray();
       res.send(result);
     });
 
     // get all booked services by a specific user:
-    app.get("/booked-services", async (req, res) => {
+    app.get("/booked-services", verifyToken, async (req, res) => {
       const email = req.query?.email;
-      const query = { current_user_email: email };
+      const loggedUserEmail = req.user?.loggedUser;
+
+      if (email !== loggedUserEmail) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      let query = {};
+      if (email) {
+        query = { current_user_email: email };
+      }
+
       const result = await bookedServiceCollection.find(query).toArray();
       res.send(result);
     });
 
     // get all services to do by a specific service provider
-    app.get("/todo-services", async (req, res) => {
+    app.get("/todo-services", verifyToken, async (req, res) => {
+      const loggedUserEmail = req.user?.loggedUser;
       const email = req.query?.email;
-      const query = { provider_email: email };
+
+      if (email !== loggedUserEmail) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      let query = {};
+      if (email) {
+        query = { provider_email: email };
+      }
       const result = await bookedServiceCollection.find(query).toArray();
       res.send(result);
+    });
+
+    // Jaw generate token:
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.USER_TOKEN_SECRET, {
+        expiresIn: "7hr",
+      });
+
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: false,
+        })
+        .send({ success: true });
+    });
+
+    // clear cookie token:
+    app.post("/logout", async (req, res) => {
+      res
+        .cookie("token", "", {
+          expires: new Date(0),
+          httpOnly: true,
+          secure: false,
+        })
+        .send({ success: true });
     });
 
     // save service info to db
