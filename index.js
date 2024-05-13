@@ -11,7 +11,11 @@ const port = process.env.PORT || 5000;
 // middleware:
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://fix-fast-63d93.web.app", 'https://fix-fast-63d93.firebaseapp.com'],
+    origin: [
+      "http://localhost:5173",
+      "https://fix-fast-63d93.web.app",
+      "https://fix-fast-63d93.firebaseapp.com",
+    ],
     credentials: true,
   })
 );
@@ -38,7 +42,7 @@ const client = new MongoClient(uri, {
 const verifyToken = async (req, res, next) => {
   const token = req.cookies?.token;
   if (!token) {
-    return res.status(401).send("not authorization");
+    return res.status(401).send("not authorize");
   }
   jwt.verify(token, process.env.USER_TOKEN_SECRET, (err, decoded) => {
     if (err) {
@@ -59,9 +63,7 @@ async function run() {
     const bookedServiceCollection = client
       .db("fixFastDB")
       .collection("booked_services");
-    const newsCollection = client
-      .db("fixFastDB")
-      .collection("news");
+    const newsCollection = client.db("fixFastDB").collection("news");
 
     // get all services from db
     app.get("/services", async (req, res) => {
@@ -91,7 +93,6 @@ async function run() {
     app.get("/user-services", verifyToken, async (req, res) => {
       const email = req.query?.email;
       const loggedUserEmail = req.user?.loggedUser;
-
       if (email !== loggedUserEmail) {
         return res.status(403).send({ message: "forbidden access" });
       }
@@ -137,17 +138,17 @@ async function run() {
     });
 
     // get all news
-    app.get('/news', async(req, res)=>{
-      const result = await newsCollection.find().toArray()
-      res.send(result)
-    })
+    app.get("/news", async (req, res) => {
+      const result = await newsCollection.find().toArray();
+      res.send(result);
+    });
     // get a single news by id
-    app.get('/news/:id', async(req, res)=>{
-      const id = req.params.id
-      const query = {_id: new ObjectId(id)}
-      const result = await newsCollection.findOne(query)
-      res.send(result)
-    })
+    app.get("/news/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await newsCollection.findOne(query);
+      res.send(result);
+    });
 
     // Jaw generate token:
     app.post("/jwt", async (req, res) => {
@@ -156,22 +157,18 @@ async function run() {
         expiresIn: "7hr",
       });
 
-      res
-        .cookie("token", token, {
-          httpOnly: true,
-          secure: false,
-        })
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none'
+      })
         .send({ success: true });
     });
 
     // clear cookie token:
     app.post("/logout", async (req, res) => {
       res
-        .cookie("token", "", {
-          expires: new Date(0),
-          httpOnly: true,
-          secure: false,
-        })
+        .clearCookie("token", { maxAge: 0, sameSite: "none", secure: true })
         .send({ success: true });
     });
 
