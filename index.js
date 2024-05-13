@@ -11,7 +11,7 @@ const port = process.env.PORT || 5000;
 // middleware:
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://fix-fast-63d93.web.app"],
+    origin: ["http://localhost:5173", "https://fix-fast-63d93.web.app", 'https://fix-fast-63d93.firebaseapp.com'],
     credentials: true,
   })
 );
@@ -59,6 +59,9 @@ async function run() {
     const bookedServiceCollection = client
       .db("fixFastDB")
       .collection("booked_services");
+    const newsCollection = client
+      .db("fixFastDB")
+      .collection("news");
 
     // get all services from db
     app.get("/services", async (req, res) => {
@@ -132,6 +135,19 @@ async function run() {
       const result = await bookedServiceCollection.find(query).toArray();
       res.send(result);
     });
+
+    // get all news
+    app.get('/news', async(req, res)=>{
+      const result = await newsCollection.find().toArray()
+      res.send(result)
+    })
+    // get a single news by id
+    app.get('/news/:id', async(req, res)=>{
+      const id = req.params.id
+      const query = {_id: new ObjectId(id)}
+      const result = await newsCollection.findOne(query)
+      res.send(result)
+    })
 
     // Jaw generate token:
     app.post("/jwt", async (req, res) => {
