@@ -11,7 +11,7 @@ const port = process.env.PORT || 5000;
 // middleware:
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://fix-fast-63d93.web.app/"],
+    origin: ["http://localhost:5173", "https://fix-fast-63d93.web.app"],
     credentials: true,
   })
 );
