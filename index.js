@@ -6,6 +6,15 @@ require("dotenv").config();
 const cors = require("cors");
 const app = express();
 
+const nodemailer = require("nodemailer");
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
 const port = process.env.PORT || 5000;
 
 // middleware:
@@ -196,6 +205,51 @@ async function run() {
     app.post("/booked-service", async (req, res) => {
       const bookedService = req.body;
       const result = await bookedServiceCollection.insertOne(bookedService);
+      if (result.insertedId) {
+        const {
+          current_user_email,
+          current_user_name,
+          service_name,
+          price,
+          provider_email,
+          provider_name,
+        } = bookedService;
+
+        const mailOptions = {
+          from: process.env.EMAIL_USER,
+          to: current_user_email,
+          subject: "Congratulation! Service Booked Successful",
+          text: current_user_name,
+          html: `
+              <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+            <h2 style="color: #333;">Thank You for Booking a Service with FixFast!</h2>
+            <p>Dear ${current_user_name},</p>
+            <p>Thank you for booking the <strong>${service_name}</strong> service through FixFast. We are delighted to have you as a customer.</p>
+            <p>Here are the details of your booking:</p>
+            <ul>
+              <li><strong>Service:</strong> ${service_name}</li>
+              <li><strong>Price:</strong> ${price}</li>
+              <li><strong>Service Provider:</strong> ${provider_name}</li>
+              <li><strong>Service Provider Email:</strong> <a href="mailto:${provider_email}">${provider_email}</a></li>
+            </ul>
+            <p>If you have any questions or need further assistance, please feel free to contact us or your service provider directly.</p>
+            <p>We hope you have a great experience with FixFast and look forward to serving you again in the future.</p>
+            <p>Best regards,</p>
+            <p>The FixFast Team</p>
+            <footer style="margin-top: 20px; color: #777;">
+              <p>FixFast - Your trusted service-sharing platform for electronics.</p>
+              <p><a href="https://fix-fast-63d93.web.app" style="color: #007bff; text-decoration: none;">Visit our website</a> | <a href="mailto:towhidmorol46@gmail.com" style="color: #007bff; text-decoration: none;">Contact Support</a></p>
+            </footer>
+          </div>
+          `,
+        };
+        try {
+          await transporter.sendMail(mailOptions);
+          console.log("Email send successfully");
+        } catch (error) {
+          console.log("Email send failed");
+        }
+      }
       res.send(result);
     });
 
